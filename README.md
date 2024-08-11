@@ -65,7 +65,7 @@ bash install.sh
  
 %cd Large_dataset_translator
 
-%bash install.sh
+!bash install.sh
 ```
 ### Testing
 Run the provided test script to ensure the tool works correctly. This should take about 10-20 minutes on a local machine or 5-10 minutes on Colab.
