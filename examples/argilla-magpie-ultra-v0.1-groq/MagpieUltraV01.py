@@ -52,7 +52,7 @@ class MagpieUltraV01Parser(DataParser):
                 random_index = random.randint(0, len(self.system_prompts['train']) - 1)
 
                 if random.random() < 0.5:
-                    data_dict['system_prompt'] = ""
+                    data_dict['system_prompt'] = None
                 else:
                     data_dict['system_prompt'] = self.system_prompts['train'][random_index]['prompt']
 
