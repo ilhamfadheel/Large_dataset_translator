@@ -12,25 +12,25 @@
   </a>
 </p>
 
-The Large Dataset Translator is a robust solution crafted to effectively translate sizable datasets into diverse languages. It provides a smooth and parallelized translation process, guaranteeing swift outcomes without the need for an API key. The tool facilitates multithreaded processing, allowing users to translate extensive datasets in significantly less time. Additionally, it features an automatic fail-restart mechanism, ensuring the seamless continuation of the translation process in case of any interruptions. 
+The Large Dataset Translator is a powerful solution designed to efficiently translate large datasets into various languages. It offers a streamlined and parallelized translation process, ensuring fast results without the need for an API key. The tool supports multithreaded processing, enabling users to translate extensive datasets in less time. It also includes an automatic fail-restart mechanism, ensuring uninterrupted translation in case of any issues.
 
-### Features
+### Key Features
 
-- **Parallelized Translation**: Utilizes multithread processing to split large datasets into chunks and translate in parallel, significantly reducing processing time.
+- **Parallelized Translation**: Utilizes multithreaded processing to divide large datasets into chunks and translate them in parallel, significantly reducing processing time.
   
-- **Handling Large Lists**: Efficiently handles datasets containing large lists (e.g., dialogs) by splitting them into sub-lists and translating each sub-list in parallel.
+- **Handling Large Lists**: Efficiently handles datasets with large lists (e.g., dialogs) by splitting them into sub-lists and translating each sub-list in parallel.
 
-- **Automatic Retry Mechanism**: Any thread that fails during translation will automatically restart with its specific chunk until all data points are fully translated.
+- **Automatic Retry Mechanism**: Automatically restarts any failed translation threads, ensuring all data points are fully translated.
 
-- **Data Format Compatibility**: Converts datasets into a format supported by pyarrow and huggingface-datasets for seamless integration.
+- **Data Format Compatibility**: Converts datasets into formats supported by pyarrow and huggingface-datasets for seamless integration.
 
-- **Pre-Translation Filters**: Filters can be applied before translation, such as removing examples that might contain code.
+- **Pre-Translation Filters**: Apply filters before translation, such as removing examples that may contain code.
 
-- **GIL Resilience**: Python Global Interpreter Lock (GIL) won't affect speed, as tasks consist of purely I/O-bound operations.
+- **GIL Resilience**: Python Global Interpreter Lock (GIL) does not impact speed, as tasks primarily involve I/O-bound operations.
 
-- **Automatic Download**: Automatically downloads the converted dataset and the translated dataset on Colab upon completion.
+- **Automatic Download**: Automatically downloads the converted dataset and translated dataset on Colab upon completion.
 
-- **Unlimited Translation**: No API key is required, making it ideal for translating large datasets without limitations.
+- **Unlimited Translation**: No API key required, making it ideal for translating large datasets without limitations.
 
 ### Demonstration
 
@@ -78,6 +78,20 @@ python examples/YahmaAlpaca/AlpacaCleaned_Parser.py
 %run examples/YahmaAlpaca/AlpacaCleaned_Parser.py
 ```
 Check the examples/YahmaAlpaca directory when the script finished, there should be a parsed dataset and a vietnamese dataset. 
+
+#### LLM-based Translation
+For a higher quality translation using LLM with context-aware translation, you can utilize the following script:
+
+```sh
+%run examples/argilla-magpie-ultra-v0.1-groq/MagpieUltraV01.py
+```
+or locally with:
+```sh
+python examples/argilla-magpie-ultra-v0.1-groq/MagpieUltraV01.py
+```
+
+This script is capable of translating approximately 100 examples every 6-7 minutes using Groq. To use it, you will need to obtain a free [API key](https://console.groq.com/keys) and set the environment variable by executing `export GROQ_API_KEY=<your_api_key>`.
+
 
 ## Usage
 ### To translate your own dataset:

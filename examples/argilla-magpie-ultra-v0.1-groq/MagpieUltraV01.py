@@ -13,7 +13,7 @@ from providers import GroqProvider
 
 PARSER_NAME = "MagpieUltraV01"
 
-# Patience is the key since the data is large and using LLM based translator
+# Patience is the key since the data is large and is using an LLM based translator
 class MagpieUltraV01Parser(DataParser):
     def __init__(self, file_path: str, output_path: str):
         super().__init__(file_path, output_path,
@@ -23,10 +23,10 @@ class MagpieUltraV01Parser(DataParser):
                          target_fields=['question_text', 'orig_answer_texts'],   # The data fields to be translated (The fields belong to BaseConfig)
                          do_translate=True,
                          no_translated_code=False,
-                         translator=GroqProvider,
-                         parser_callbacks=[VerboseCallback],
-                         max_example_per_thread=400,
-                         large_chunks_threshold=2000)  # The callback to be called after the data has been converted and translated
+                         translator=GroqProvider, # Groq is very slow but it is a high quality translator
+                         parser_callbacks=[VerboseCallback], # The callback to be called after the data has been converted and translated
+                         max_example_per_thread=50, # Set this to a lower number since a fail translation will cause the whole thread to restart, loosing all the progress of the thread
+                         large_chunks_threshold=3000)  
 
     # Read function must assign data that has been read to self.data_read
     def read(self) -> None:
@@ -34,7 +34,6 @@ class MagpieUltraV01Parser(DataParser):
         # I just want to be sure that the file path is correct
         super(MagpieUltraV01Parser, self).read()
 
-        # OpenOcra is pretty large, so adjust accordingly
         self.data_read = load_dataset("argilla/magpie-ultra-v0.1")
         self.system_prompts = load_dataset("teilomillet/system_prompt")
 
@@ -51,7 +50,12 @@ class MagpieUltraV01Parser(DataParser):
             for data in tqdm(self.data_read[split], desc=f"Converting {split} data"):
                 data_dict = {}
                 random_index = random.randint(0, len(self.system_prompts['train']) - 1)
-                data_dict['system_prompt'] = self.system_prompts['train'][random_index]['prompt']
+
+                if random.random() < 0.5:
+                    data_dict['system_prompt'] = ""
+                else:
+                    data_dict['system_prompt'] = self.system_prompts['train'][random_index]['prompt']
+
                 data_dict['qas_id'] = self.id_generator()
                 data_dict['question_text'] = data['instruction']
                 data_dict['orig_answer_texts'] = data['response']
@@ -60,14 +64,14 @@ class MagpieUltraV01Parser(DataParser):
                 data_converted.append(data_dict)
 
         # Be sure to assign the final data list to self.converted_data
-        self.converted_data = data_converted[:2000]
+        self.converted_data = data_converted[:6000]
 
         return None
 
 
 if __name__ == '__main__':
-    magpie_ultra_v01_parser = MagpieUltraV01Parser(r"examples/argilla-magpie-ultra-v0.1/dummy.txt",
-                                                   r"examples/argilla-magpie-ultra-v0.1")
+    magpie_ultra_v01_parser = MagpieUltraV01Parser(r"examples/argilla-magpie-ultra-v0.1-groq/dummy.txt",
+                                                   r"examples/argilla-magpie-ultra-v0.1-groq")
     magpie_ultra_v01_parser.read()
     magpie_ultra_v01_parser.convert()
     magpie_ultra_v01_parser.save
