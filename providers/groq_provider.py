@@ -9,6 +9,12 @@ sys.path.insert(0,r'./')
 from groq import Groq
 
 try:
+    from google.colab import userdata
+    IN_COLAB = True
+except ImportError:
+    IN_COLAB = False
+
+try:
     from .base_provider import Provider
     from .utils import *
     from .google_provider import GoogleProvider
@@ -31,9 +37,14 @@ class GroqProvider(Provider):
     def __init__(self):
 
         try:
-            self.groq_client = Groq(
-                api_key=os.environ.get("GROQ_API_KEY"),
-            )
+            if IN_COLAB:
+                self.groq_client = Groq(
+                    api_key=userdata.get('GROQ_API_KEY'),
+                )
+            else:
+                self.groq_client = Groq(
+                    api_key=os.environ.get("GROQ_API_KEY"),
+                )
         except KeyError:
             raise KeyError("Please set the environment variable GROQ_API_KEY by running `export GROQ_API_KEY=<your_api_key>`, the API key can be obtained from https://console.groq.com/keys, it is free to sign up and use the API.")
 
