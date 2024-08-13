@@ -92,6 +92,8 @@ python examples/argilla-magpie-ultra-v0.1-groq/MagpieUltraV01.py
 
 This script is capable of translating approximately 100 examples every 6-7 minutes using Groq. To use it, you will need to obtain a free [API key](https://console.groq.com/keys) and set the environment variable by executing `export GROQ_API_KEY=<your_api_key>`.
 
+An example dataset that has utilized the above script: [1TuanPham/Vietnamese-magpie-ultra-v0.1](https://huggingface.co/datasets/1TuanPham/Vietnamese-magpie-ultra-v0.1)
+
 
 ## Usage
 ### To translate your own dataset:
