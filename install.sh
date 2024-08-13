@@ -11,4 +11,6 @@ fi
 
 pip install httpx==1.0.0.beta0 --force-reinstall
 
+python string_ops/build.py
+
 echo "Installation completed successfully!"

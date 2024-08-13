@@ -23,6 +23,11 @@ except ImportError:
     from utils import *
     from google_provider import GoogleProvider
 
+from string_ops import *
+
+
+
+
 # Cache the fail prompt to avoid running translation again for subsequent calls
 CACHE_FAIL_PROMPT = []
 
@@ -30,6 +35,8 @@ CACHE_FAIL_PROMPT = []
 INIT_PROMPT_TRANSLATOR = GoogleProvider()
 # Cache the init prompt to avoid running translation again for subsequent calls
 CACHE_INIT_PROMPT = {}
+STRICT_TRANSLATION = True # If set to True, the translation will fail if the translation output contains repeating suffixes, if set to False, the translation output will be cleaned and the repeating suffixes will be removed
+SUFFIXES_PERCENTAGE = 20 # The percentage of the suffixes that should be repeating to be considered as repeating suffixes
 
 
 # The GroqProvider class is a provider that uses the Groq API to translate text from one language to another via LLM, expect a high quality translation but it is very slow (100 examples every 6-7 minutes)
@@ -137,7 +144,7 @@ class GroqProvider(Provider):
             return fail_translation_code
         
         # Clear the cache if the cache is too large
-        if len(CACHE_FAIL_PROMPT) > 5:
+        if len(CACHE_FAIL_PROMPT) > 12000:
             CACHE_FAIL_PROMPT.pop(0)
         if len(CACHE_INIT_PROMPT) > 5:
             CACHE_INIT_PROMPT.pop(0)
@@ -146,21 +153,47 @@ class GroqProvider(Provider):
             output = self.translator(**chat_args)
         except Exception as e:
             # Check if the exception is unavoidable by fuzzy matching the prompt with the cache prompt
-            if fuzzy_match(input_data, CACHE_FAIL_PROMPT, threshold=80):
+            if fuzzy_match(input_data, CACHE_FAIL_PROMPT, threshold=80, disable_fuzzy=True):
                 print(f"Unavoidable exception: {e}")
                 if data_type == "list": return [fail_translation_code, fail_translation_code]
                 return fail_translation_code
             else:
                 CACHE_FAIL_PROMPT.append(input_data)
             raise e
-
+        
         if data_type == "list":
             output_text = output.choices[0].message.content
             output_schema = Translation.model_validate_json(output_text)
             output_dict = output_schema.model_dump()
-            return [output_dict[f"translation_{i}"] for i in range(len(input_data))]
+            final_result =  [output_dict[f"translation_{i}"] for i in range(len(input_data))]        
         else:
-            return output.choices[0].message.content
+            final_result = output.choices[0].message.content
+
+        try:
+            if data_type == "list":
+                cleaned_output = []
+                for data in final_result:
+                    # Clean the translation output if there is any repeating suffix
+                    output, percentage_removed = remove_fuzzy_repeating_suffix(data, 0.8)
+                    if percentage_removed > SUFFIXES_PERCENTAGE and STRICT_TRANSLATION:
+                        final_result = [fail_translation_code, fail_translation_code]
+                        break
+                    else:
+                        cleaned_output.append(output)
+                final_result = cleaned_output
+            else:
+                output, percentage_removed = remove_fuzzy_repeating_suffix(final_result, 0.8)
+                if percentage_removed > SUFFIXES_PERCENTAGE and STRICT_TRANSLATION:
+                    final_result = fail_translation_code
+                else:
+                    final_result = output
+                    
+        except Exception as e:
+            print(f"Error in cleaning the translation output: {e}")
+            if data_type == "list": return [fail_translation_code, fail_translation_code]
+            return fail_translation_code
+
+        return final_result
 
 if __name__ == '__main__':
     test = GroqProvider()

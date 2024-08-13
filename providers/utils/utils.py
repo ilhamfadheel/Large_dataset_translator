@@ -7,11 +7,11 @@ from collections import deque
 from fuzzywuzzy import fuzz
 from pydantic import BaseModel, Field, create_model
 
-
 from typing import Callable
 from threading import Lock
 import time
 from functools import wraps
+
 
 def throttle(calls_per_minute: int, verbose: bool=False) -> Callable:
     """
@@ -51,6 +51,7 @@ def throttle(calls_per_minute: int, verbose: bool=False) -> Callable:
                 return func(*args, **kwargs)
         return wrapper
     return decorator
+
 
 def brust_throttle(calls_per_minute: int, verbose: bool=False, extra_delay: float=1.25):
     """
@@ -104,7 +105,7 @@ def create_dynamic_model(model_name: str, fields: Dict[str, Any]) -> BaseModel:
     return create_model(model_name, **fields)
 
 
-def fuzzy_match(input_string, comparison_strings: list, threshold=80):
+def fuzzy_match(input_string, comparison_strings: list, threshold=80, disable_fuzzy: bool=False):
     """
     Check if two strings are similar based on the Levenshtein distance.
 
@@ -115,8 +116,12 @@ def fuzzy_match(input_string, comparison_strings: list, threshold=80):
     """
     
     for comparison_string in comparison_strings:
-        if fuzz.ratio(input_string, comparison_string) >= threshold:
+
+        if fuzz.ratio(input_string, comparison_string) >= threshold and not disable_fuzzy:
             return True
+        else:
+            if input_string == comparison_string:
+                return True
     return False
 
 
