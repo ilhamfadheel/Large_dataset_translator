@@ -11,7 +11,7 @@ from translator import DataParser, VerboseCallback
 from providers import GroqProvider
 
 
-PARSER_NAME = "MagpieUltraV01_En"
+PARSER_NAME = "MagpieUltraV01"
 
 # Patience is the key since the data is large and is using an LLM based translator
 class MagpieUltraV01Parser(DataParser):
