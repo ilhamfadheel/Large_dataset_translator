@@ -11,7 +11,7 @@ from translator import DataParser, VerboseCallback
 from providers import GroqProvider
 
 
-PARSER_NAME = "MagpieUltraV01"
+PARSER_NAME = "MagpieUltraV01_En"
 
 # Patience is the key since the data is large and is using an LLM based translator
 class MagpieUltraV01Parser(DataParser):
@@ -21,7 +21,7 @@ class MagpieUltraV01Parser(DataParser):
                          target_config=BaseConfig,   # The data config to be validated to check if self implement "convert" function is correct or not,
                                                      # you must map the data form to the correct fields of the @dataclass in the configs/base_config.py
                          target_fields=['question_text', 'orig_answer_texts'],   # The data fields to be translated (The fields belong to BaseConfig)
-                         do_translate=True,
+                         do_translate=False,
                          no_translated_code=False,
                          translator=GroqProvider, # Groq is very slow but it is a high quality translator
                          parser_callbacks=[VerboseCallback], # The callback to be called after the data has been converted and translated
@@ -64,7 +64,7 @@ class MagpieUltraV01Parser(DataParser):
                 data_converted.append(data_dict)
 
         # Be sure to assign the final data list to self.converted_data
-        self.converted_data = data_converted[6000:12000]
+        self.converted_data = data_converted[12000:18000] # 6k examples at a time to avoid tokens limit
 
         return None
 
