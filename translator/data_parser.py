@@ -38,8 +38,8 @@ class DataParser(metaclass=ForceBaseCallMeta):
     def __init__(self, file_path: str,
                  output_dir: str,
                  parser_name: str,
-                 target_fields: List[str],
                  target_config: Config,
+                 target_fields: List[str]=None,
                  do_translate: bool = False,
                  enable_sub_task_thread: bool = True,  # Enable splitting a large list into sublist if a list of one example is too large to process
                                                        # This argument go with max_list_length_per_thread

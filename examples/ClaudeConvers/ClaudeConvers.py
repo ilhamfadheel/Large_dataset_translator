@@ -18,7 +18,6 @@ class ClaudeConversParser(DataParser):
                          parser_name=PARSER_NAME,
                          target_config=BaseConfig,   # The data config to be validated to check if self implement "convert" function is correct or not,
                                                      # you must map the data form to the correct fields of the @dataclass in the configs/base_config.py
-                         target_fields=['question_text', 'orig_answer_texts'],   # The data fields to be translated (The fields belong to BaseConfig)
                          do_translate=False,
                          no_translated_code=False)
 
