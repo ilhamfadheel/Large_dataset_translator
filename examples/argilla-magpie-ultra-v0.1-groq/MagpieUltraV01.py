@@ -21,8 +21,8 @@ class MagpieUltraV01Parser(DataParser):
                          target_config=BaseConfig,   # The data config to be validated to check if self implement "convert" function is correct or not,
                                                      # you must map the data form to the correct fields of the @dataclass in the configs/base_config.py
                          target_fields=['question_text', 'orig_answer_texts'],   # The data fields to be translated (The fields belong to BaseConfig)
-                         do_translate=False,
-                         no_translated_code=False,
+                         do_translate=True,
+                         no_translated_code=False, # Remove any instance of string that appears to be coding language (e.g. Python code, HTML, etc.)
                          translator=GroqProvider, # Groq is very slow but it is a high quality translator
                          parser_callbacks=[VerboseCallback], # The callback to be called after the data has been converted and translated
                          max_example_per_thread=25, # Set this to a lower number since a fail translation will cause the whole thread to restart, loosing all the progress of the thread
