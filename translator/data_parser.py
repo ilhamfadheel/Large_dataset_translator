@@ -419,7 +419,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
             return None
 
         progress_bar_desc = "Translating converted data" if not desc else f"Translating converted data {desc}"
-        for example in tqdm(converted_data, desc=progress_bar_desc, colour="#add8e6"):
+        for example in tqdm(converted_data, desc=progress_bar_desc, colour="#add8e6", leave=False):
             translated_data_example = self.__translate_per_key(example,
                                                                translator,
                                                                progress_idx=int(re.findall(r'\d+', desc)[0]) if desc and re.findall(r'\d+', desc) else 0)
