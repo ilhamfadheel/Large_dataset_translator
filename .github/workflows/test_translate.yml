@@ -5,11 +5,16 @@ on:
     # Check on all branches
     branches:
       - '*'
+    # Run only if specific code files change
+    paths:
+      - '**/*.py'
+      - '**/*.c'
   schedule:
     - cron: '0 0 */14 * *' # Runs every 14 days
 
 jobs:
   test:
+    if: github.event_name == 'push' && (contains(join(github.event.commits.*.modified), '.py') || contains(join(github.event.commits.*.modified), '.c')) || github.event_name == 'schedule'
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
