@@ -64,7 +64,7 @@ class MagpieUltraV01Parser(DataParser):
                 data_converted.append(data_dict)
 
         # Be sure to assign the final data list to self.converted_data
-        self.converted_data = data_converted[12000:18000] # 6k examples at a time to avoid tokens limit
+        self.converted_data = data_converted[18000:24000] # 6k examples at a time to avoid tokens limit
 
         return None
 
