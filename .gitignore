@@ -5,6 +5,13 @@ __pycache__/
 # C extensions
 *.so
 
+# Dataset
+*.csv
+*.xlsx
+*.xls
+*.json
+*.xml
+
 # Distribution / packaging
 .Python
 build/
