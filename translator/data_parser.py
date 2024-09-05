@@ -96,6 +96,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
             print(f"Parser {self.parser_name} has {len(self.parser_callbacks)} callbacks")
             self.parser_callbacks = [callback() for callback in self.parser_callbacks]
             for callback in self.parser_callbacks:
+                assert isinstance(callback, ParserCallback), "Please provide a valid callback function!"
                 callback.on_start_init(self)
         
         self.data_read = None
@@ -142,7 +143,6 @@ class DataParser(metaclass=ForceBaseCallMeta):
 
         if self.parser_callbacks:
             for callback in self.parser_callbacks:                
-                assert isinstance(callback, ParserCallback), "Please provide a valid callback function!"
                 callback.on_finish_init(self)
 
     @property
