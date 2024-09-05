@@ -26,7 +26,13 @@ from concurrent.futures import ThreadPoolExecutor
 from providers import *
 from configs import *
 from .callbacks import *
-from .utils import force_super_call, ForceBaseCallMeta, timeit, have_internet
+from .utils import (
+    force_super_call,
+    ForceBaseCallMeta,
+    no_args_method,
+    timeit,
+    have_internet,
+)
 from .filters import have_code, have_re_code
 
 
@@ -39,6 +45,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
                  output_dir: str,
                  parser_name: str,
                  target_config: Config,
+                 verbose: bool = False,
                  target_fields: List[str]=None,
                  do_translate: bool = False,
                  enable_sub_task_thread: bool = True,  # Enable splitting a large list into sublist if a list of one example is too large to process
@@ -48,30 +55,65 @@ class DataParser(metaclass=ForceBaseCallMeta):
                  large_chunks_threshold: int = 20000,  # Maximum number of examples that will be distributed evenly across threads, any examples exceed this threshold will be process in queue
                  max_list_length_per_thread: int = 3,  # Maximum number of strings contain in a list in a single thread.
                                                        # if larger, split the list into sub-list and process in parallel
+                 max_example_length: int = 15000,  # Maximum string length in a single example, if exceed, truncate the string 
+                 average_string_length_in_list: int = 1600,  # Average string length in a list, if exceed, split the list into sub-list and process in parallel
                  translator: Provider = GoogleProvider,
                  source_lang: str = "en",
                  target_lang: str = "vi",
                  fail_translation_code: str="P1OP1_F",  # Fail code for *expected* fail translation and can be removed
                                                         # post-translation,
-                 parser_callbacks: List[ParserCallback] = None  # Callback function to be called after translation
+                 parser_callbacks: List[ParserCallback] = None  # Callback function to be called after each step of the parser
                  ) -> None:
-
+        
+        """
+        Initializes the DataParser object.
+        Args:
+            file_path (str): The path to the file.
+            output_dir (str): The output directory.
+            parser_name (str): The name of the parser.
+            target_config (Config): The target configuration.
+            verbose (bool, optional): Whether to enable verbose mode. Defaults to False.
+            target_fields (List[str], optional): The target fields to be translated. Defaults to None.
+            do_translate (bool, optional): Whether to perform translation. Defaults to False.
+            enable_sub_task_thread (bool, optional): Whether to enable sub-task threading. Defaults to True.
+            no_translated_code (bool, optional): Whether to exclude translated code. Defaults to False.
+            max_example_per_thread (int, optional): The maximum number of examples per thread. Defaults to 400.
+            large_chunks_threshold (int, optional): The maximum number of examples for large chunks. Defaults to 20000.
+            max_list_length_per_thread (int, optional): The maximum number of strings in a list per thread. Defaults to 3.
+            max_example_length (int, optional): The maximum string length in a single example. Defaults to 15000.
+            average_string_length_in_list (int, optional): The average string length in a list. Defaults to 1600.
+            translator (Provider, optional): The translation provider. Defaults to GoogleProvider.
+            source_lang (str, optional): The source language. Defaults to "en".
+            target_lang (str, optional): The target language. Defaults to "vi".
+            fail_translation_code (str, optional): The fail code for expected fail translation. Defaults to "P1OP1_F".
+            parser_callbacks (List[ParserCallback], optional): The callback function to be called after each step of the parser. Defaults to None.
+        """
+        self.parser_name = parser_name
+        self.parser_callbacks = parser_callbacks
+        if self.parser_callbacks:
+            if not isinstance(self.parser_callbacks, list):
+                self.parser_callbacks = [self.parser_callbacks]
+            print(f"Parser {self.parser_name} has {len(self.parser_callbacks)} callbacks")
+            self.parser_callbacks = [callback() for callback in self.parser_callbacks]
+            for callback in self.parser_callbacks:
+                callback.on_start_init(self)
+        
         self.data_read = None
         self.converted_data = None
         self.file_path = file_path
         self.output_dir = output_dir
         assert os.path.isdir(self.output_dir), "Please provide the correct output directory"
 
-        self.parser_name = parser_name
         assert target_config, "Please specified the target config (Choose from the configs dir)"
         self.target_config = target_config
-
         self.do_translate = do_translate
-        self.parser_callbacks = parser_callbacks
+
+        self.verbose = verbose
 
         if self.do_translate:
             self.fail_translation_code = fail_translation_code
             self.enable_sub_task_thread = enable_sub_task_thread
+            self.max_example_length = max_example_length
             self.source_lang = source_lang
             self.target_lang = target_lang
             assert target_fields, f"Please specified target fields to be translate from the {self.target_config} config"
@@ -92,18 +134,15 @@ class DataParser(metaclass=ForceBaseCallMeta):
             self.large_chunks_threshold = large_chunks_threshold
             if self.enable_sub_task_thread:
                 self.max_list_length_per_thread = max_list_length_per_thread
+                self.average_string_length_in_list = average_string_length_in_list
 
             self.converted_data_translated = None
 
             self.translator = translator
 
         if self.parser_callbacks:
-            if not isinstance(self.parser_callbacks, list):
-                self.parser_callbacks = [self.parser_callbacks]
-            print(f"Parser {self.parser_name} has {len(self.parser_callbacks)} callbacks")
-            self.parser_callbacks = [callback() for callback in self.parser_callbacks]
             for callback in self.parser_callbacks:                
-                assert isinstance(callback, ParserCallback), "Please provide a valid callback function"
+                assert isinstance(callback, ParserCallback), "Please provide a valid callback function!"
                 callback.on_finish_init(self)
 
     @property
@@ -117,13 +156,27 @@ class DataParser(metaclass=ForceBaseCallMeta):
     @staticmethod
     def split_list(input_list: List[str], max_sub_length: int) -> List[list]:
         return [input_list[x:x + max_sub_length] for x in range(0, len(input_list), max_sub_length)]
+    
+    @staticmethod
+    def flatten_list(nested_list: list) -> list:
+        '''
+        Turn a list from [[], [], []] -> []
+        '''
+
+        flattened_list = []
+        for item in nested_list:
+            if isinstance(item, list):
+                flattened_list.extend(DataParser.flatten_list(item))
+            else:
+                flattened_list.append(item)
+        return flattened_list
 
     def validate(self, keys: List[str]) -> bool:
         dict_fields = self.target_config.get_keys()
         for key in dict_fields:
             assert key in keys, f"\n Invalid parser, the key '{key}' is missing from {dict_fields}\n" \
                                 f"you can adjust the fields {self.target_config.__name__} in the 'configs/*.py'" \
-                                f"  or fill in the missing field"
+                                f"  or fill in the missing field."
         return True
 
     @timeit
@@ -145,7 +198,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
                 else:
                     if key == self.target_fields[-1]: validated_translate_data.append(example)
 
-        print(f"\nTotal data left after filtering for translation: {len(validated_translate_data)}\n")
+        tqdm.write(f"\nTotal data left after filtering for translation: {len(validated_translate_data)}\n")
         self.converted_data = validated_translate_data
 
     @timeit
@@ -163,7 +216,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
                 elif key == self.target_fields[-1]:
                     post_validated_translate_data.append(example)
 
-        print(f"\nTotal data left after filtering fail translation: {len(post_validated_translate_data)}\n")
+        tqdm.write(f"\nTotal data left after filtering fail translation: {len(post_validated_translate_data)}\n")
         self.converted_data_translated = post_validated_translate_data
 
     def __translate_per_key(self, example: Dict, translator: Provider = None, progress_idx: int = 0) -> Dict:
@@ -181,26 +234,29 @@ class DataParser(metaclass=ForceBaseCallMeta):
                     continue
                 if type == "list":
                     for data in example[key]:
-                        if len(data) > 15000:
-                            warnings.warn("Example" + example["qas_id"] + " have field len larger than 15000")
-                            example[key].append(data[:15000])
+                        if len(data) > self.max_example_length:
+                            warnings.warn(f"Example" + example["qas_id"] + " have field len larger than {self.max_example_length}, truncating...")
+                            example[key].append(data[:self.max_example_length])
                 else:
-                    if len(example[key]) > 15000:
-                        warnings.warn("Example" + example["qas_id"] + " have field len larger than 15000")
-                        example[key] = example[key][:15000]
+                    if len(example[key]) > self.max_example_length:
+                        warnings.warn(f"Example" + example["qas_id"] + " have field len larger than {self.max_example_length}, truncating...")
+                        example[key] = example[key][:self.max_example_length]
 
                 if self.enable_sub_task_thread:
                     average_length_sub_task_criteria = False
-                    if type == "list" and len(example[key]) > 2:
+                    if type == "list":
                         average_length = sum(len(lst) for lst in example[key]) / len(example[key])
-                        if average_length > 1600: average_length_sub_task_criteria = True
+                        if average_length > self.average_string_length_in_list:
+                            average_length_sub_task_criteria = True
                     if type == "list" and average_length_sub_task_criteria and len(example[key]) >= self.max_list_length_per_thread:
-                        # tqdm.write(f"\nSplitting {key} field which contain {len(example[key])} items on chunk {progress_idx}\n")
-                        del translator
+                        if self.verbose:
+                            tqdm.write(f"\nSplitting {key} field which contain {len(example[key])} items on chunk {progress_idx}\n")
                         example[key] = self.__sublist_multithread_translate(example[key],
                                                                             progress_idx,
                                                                             key)
                     else:
+                        if self.verbose:
+                            tqdm.write(f"\nTranslating {key} field which contain string of length {len(example[key])} on chunk {progress_idx}\n")
                         example[key] = self.__translate_texts(src_texts=example[key], translator=translator)
                 else:
                     example[key] = self.__translate_texts(src_texts=example[key], translator=translator)
@@ -238,6 +294,11 @@ class DataParser(metaclass=ForceBaseCallMeta):
                 else:
                     tqdm.write(f"Sub task of chunk {progress_idx} with field {field_name} failed with the following error: {future.exception()}."
                                f"Restarting thread when others finished...")
+                    if self.verbose:
+                        tqdm.write(f"Error traceback: {traceback.format_exc()}")
+                    if self.parser_callbacks:
+                        for callback in self.parser_callbacks:
+                            callback.on_error_translate(self, future.exception())
                 pass
 
             for idx, list_chunk in enumerate(sub_str_lists):
@@ -274,21 +335,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
             translated_list_data = sorted(translated_list_data, key=lambda x: x['key'])
             # Extracting values after sorting
             translated_list_data = [item['text_list'] for item in translated_list_data]
-
-            def flatten_list(nested_list):
-                '''
-                Turn a list from [[], [], []] -> []
-                '''
-
-                flattened_list = []
-                for item in nested_list:
-                    if isinstance(item, list):
-                        flattened_list.extend(flatten_list(item))
-                    else:
-                        flattened_list.append(item)
-                return flattened_list
-
-            translated_list_data = flatten_list(translated_list_data)
+            translated_list_data = self.flatten_list(translated_list_data)
 
             return translated_list_data
 
@@ -301,14 +348,33 @@ class DataParser(metaclass=ForceBaseCallMeta):
         Actual place where translation take place
         '''
 
+        list_bypass = False
+        if type(src_texts) == list:
+            if len(src_texts) == 1:
+                src_texts = src_texts[0]
+                list_bypass = True
+                if self.verbose:
+                    tqdm.write(f"List contain only one element, extract the element and translate...")
+            if len(src_texts) == 0:
+                if self.verbose:
+                    tqdm.write(f"Empty list, skipping...")
+                return src_texts
+        else:
+            if len(src_texts) == 0:
+                if self.verbose:
+                    tqdm.write(f"Empty string, skipping...")
+                return src_texts
+
         assert self.do_translate, "Please enable translate via self.do_translate"
         # This if is for multithread Translator instance
-        translator_instance = deepcopy(self.translator)() if not translator else translator
+        translator_instance = deepcopy(self.translator)() if translator is None else translator
 
         target_texts = translator_instance.translate(src_texts,
                                                      src=self.source_lang,
                                                      dest=self.target_lang,
                                                      fail_translation_code=self.fail_translation_code)
+        if list_bypass:
+            target_texts = [target_texts]
 
         return {'text_list': target_texts, 'key': sub_list_idx} if sub_list_idx is not None else target_texts
 
@@ -342,7 +408,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
             tqdm.write(
                 f"Data is way too large, spliting data into {num_large_chunks} large chunk for sequential translation")
 
-            for idx, large_chunk in enumerate(tqdm(large_chunks, desc=f"Translating large chunk ", colour="red")):
+            for idx, large_chunk in enumerate(tqdm(large_chunks, desc=f"Translating large chunk ", colour="red")): # Main thread progress bar
                 tqdm.write(f"Processing large chunk No: {idx}")
                 self.translate_converted(large_chunk=large_chunk)
             return None
@@ -356,7 +422,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
 
             # Progress bar
             desc = "Translating total converted large chunk data" if large_chunk else "Translating total converted data"
-            progress_bar = tqdm(total=math.ceil(num_threads), desc=desc, position=math.ceil(num_threads)+1)
+            progress_bar = tqdm(total=math.ceil(num_threads), desc=desc, position=math.ceil(num_threads)+1, leave=False)
 
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
                 futures = []
@@ -378,6 +444,12 @@ class DataParser(metaclass=ForceBaseCallMeta):
                     else:
                         tqdm.write(f"Task failed with the following error: {future.exception()}."
                                    f" Restarting thread when others finished")
+                        if self.verbose:
+                            tqdm.write(f"Error traceback: {traceback.format_exc()}")
+                        if self.parser_callbacks:
+                            for callback in self.parser_callbacks:
+                                callback.on_error_translate(self, future.exception())
+
                         pass
 
                 for idx, chunk in enumerate(chunks):
@@ -446,22 +518,26 @@ class DataParser(metaclass=ForceBaseCallMeta):
     @force_super_call
     def read(self) -> Union[List, Dict, None]:
         assert os.path.isfile(self.file_path), f"Invalid path file for {self.file_path}"
+
+        if self.parser_callbacks:
+            for callback in self.parser_callbacks:
+                callback.on_start_read(self)
         pass
 
-    @property
-    @force_super_call
+    @no_args_method
     @timeit
     def save(self) -> None:
         '''
         Save the correct format that pyarrow supported, which is "line-delimited JSON" and can be load by
         huggingface-datasets load_datasets function
         '''
+        
         if self.parser_callbacks:
             for callback in self.parser_callbacks:
                 callback.on_finish_convert(self)
             
             for callback in self.parser_callbacks:
-                callback.on_start_save(self)
+                callback.on_start_save_converted(self)
 
         output_path = os.path.join(self.output_dir, f"{self.parser_name}.json")
         with open(output_path, 'w', encoding='utf-8') as jfile:
@@ -473,7 +549,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
         
         if self.parser_callbacks:
             for callback in self.parser_callbacks:
-                callback.on_finish_save(self)
+                callback.on_finish_save_converted(self)
 
         if IN_COLAB:
             print(f"\n Downloading converted data to local machine...")
@@ -492,6 +568,9 @@ class DataParser(metaclass=ForceBaseCallMeta):
             if self.parser_callbacks:
                 for callback in self.parser_callbacks:
                     callback.on_finish_translate(self)
+                
+                for callback in self.parser_callbacks:
+                    callback.on_start_save_translated(self)
                     
             output_translated_path = os.path.join(self.output_dir,
                                                   f"{self.parser_name}_translated_{self.target_lang}.json")
@@ -501,6 +580,10 @@ class DataParser(metaclass=ForceBaseCallMeta):
                         tqdm(self.converted_data_translated, desc="Writing translated data to file")):
                     jfile.write(json.dumps(data, ensure_ascii=False) + "\n")
                 print(f"\n Total line printed: {idx + 1}")
+            
+            if self.parser_callbacks:
+                for callback in self.parser_callbacks:
+                    callback.on_finish_save_translated(self)
 
             if IN_COLAB:
                 print(f"\n Downloading converted translated data to local machine...")

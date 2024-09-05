@@ -67,3 +67,15 @@ class ForceBaseCallMeta(abc.ABCMeta):
                 mcls.forcecall_registry[cls][name] = method.client_decorator
         cls.__getattribute__ = forcecall__getattribute__
         return cls
+
+
+class NoArgsDecorator:
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, instance, owner):
+        # Call the function when accessed without parentheses
+        self.func(instance)
+
+def no_args_method(func):
+    return NoArgsDecorator(func)
