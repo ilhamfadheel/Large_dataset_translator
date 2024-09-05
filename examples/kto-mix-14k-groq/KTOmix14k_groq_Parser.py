@@ -65,7 +65,7 @@ class KTOmix14kGroq(DataParser):
         output_path: str,
         target_lang: str = "vi",
         max_example_per_thread=10,
-        max_example_length=8000,
+        max_example_length=15000,
         large_chunks_threshold=200,
         max_list_length_per_thread=1, # GroqProvider JSON mode is still in beta and is unreliable, so we limit the list length to 1 so it can be translate as a single string for list of strings
         average_string_length_in_list=0, # Lower the average string length in list to 0 so the criteria for sub-list chunking is only based on the max_list_length_per_thread

@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-
 from typing import Union, List
 
 from pydantic import Field
@@ -69,7 +68,7 @@ class GroqProvider(Provider):
         
         return schema_prompt + json_prompt
 
-    @throttle(calls_per_minute=200, verbose=False)
+    @throttle(calls_per_minute=28, verbose=False)
     def _do_translate(self, input_data: Union[str, List[str]],
                       src: str, dest: str,
                       fail_translation_code:str = "P1OP1_F", # Pass in this code to replace the input_data if the exception is *unavoidable*, any example that contain this will be remove post translation
