@@ -14,6 +14,7 @@ import unittest
 import time
 import sys
 sys.path.append('.')
+sys.stdout.reconfigure(encoding='utf-8')
 from string_ops import remove_fuzzy_repeating_suffix
 
 
