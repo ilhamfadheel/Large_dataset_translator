@@ -20,7 +20,8 @@ class AlpacaCleaned(DataParser):
                                                      # you must map the data form to the correct fields of the @dataclass in the configs/base_config.py
                          target_fields=['question_text', 'orig_answer_texts'],   # The data fields to be translated (The fields belong to BaseConfig)
                          do_translate=True,
-                         no_translated_code=True,
+                         no_translated_code=True, # If you don't want to translate the coding examples, set this to True
+                         verbose=False,  # If you want to see the verbose output of the translation process, set this to True
                          target_lang="vi")
 
     # Read function must assign data that has been read to self.data_read

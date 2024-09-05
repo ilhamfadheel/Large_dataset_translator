@@ -27,6 +27,7 @@ class ELI5Val(DataParser):
                 "orig_answer_texts",
             ],  # The data fields to be translated (The fields belong to BaseConfig)
             do_translate=True,
+            verbose=False, # Set to True to see extra information
             target_lang=target_lang,
             max_example_per_thread=max_example_per_thread,
             large_chunks_threshold=large_chunks_threshold,

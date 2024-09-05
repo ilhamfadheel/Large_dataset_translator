@@ -5,7 +5,7 @@ sys.path.insert(0,r'./')
 from tqdm.auto import tqdm
 
 from configs import QAConfig
-from translator import DataParser
+from translator import DataParser, VerboseCallback
 
 
 PARSER_NAME = "ELI5_val_QAConfig"
@@ -25,6 +25,8 @@ class ELI5ValQAConfig(DataParser):
                          do_translate=True,
                          max_list_length_per_thread=3,
                          target_lang=target_lang,
+                         verbose=False, # Set to True to see extra information
+                         parser_callbacks=[VerboseCallback],
                          max_example_per_thread=max_example_per_thread,
                          large_chunks_threshold=large_chunks_threshold)
         self.max_ctxs = 5

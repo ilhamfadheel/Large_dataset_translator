@@ -1,4 +1,3 @@
-import json
 import sys
 
 sys.path.insert(0, r"./")
@@ -52,6 +51,7 @@ class KTOPostProcessCallback(ParserCallback):
         instance.converted_data_translated = process_translated_data
 
 
+# This use the default Google Translate API, so it is not recommended to use this if you prefer quality translation, use examples/kto-mix-14k-groq instead
 class KTOmix14k(DataParser):
     def __init__(
         self,
