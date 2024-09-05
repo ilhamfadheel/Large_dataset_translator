@@ -12,7 +12,9 @@ string_test_3 = """
 
 import unittest
 import time
-from remove_repeating_suffix import remove_fuzzy_repeating_suffix
+import sys
+sys.path.append('.')
+from string_ops import remove_fuzzy_repeating_suffix
 
 
 class RemoveRepeatingSuffixTest(unittest.TestCase):
