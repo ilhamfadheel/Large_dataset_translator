@@ -82,12 +82,22 @@ Check the examples/YahmaAlpaca directory when the script finished, there should 
 #### LLM-based Translation
 For a higher quality translation using LLM with context-aware translation, you can utilize the following script:
 
+##### [argilla/magpie-ultra-v0.1](https://huggingface.co/datasets/argilla/magpie-ultra-v0.1)
 ```sh
 %run examples/argilla-magpie-ultra-v0.1-groq/MagpieUltraV01.py
 ```
 or locally with:
 ```sh
 python examples/argilla-magpie-ultra-v0.1-groq/MagpieUltraV01.py
+```
+
+##### [trl-lib/kto-mix-14k](https://huggingface.co/datasets/trl-lib/kto-mix-14k)
+```sh
+%run examples/kto-mix-14k-groq/KTOmix14k_groq_Parser.py
+```
+or locally with:
+```sh
+python examples/kto-mix-14k-groq/KTOmix14k_groq_Parser.py
 ```
 
 This script is capable of translating approximately 100 examples every 6-7 minutes using Groq. To use it, you will need to obtain a free [API key](https://console.groq.com/keys) and set the environment variable by executing `export GROQ_API_KEY=<your_api_key>`.

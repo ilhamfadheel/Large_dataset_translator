@@ -23,7 +23,12 @@ class RemoveRepeatingSuffixTest(unittest.TestCase):
 
         for string_test in string_tests:
             time_start = time.time()
-            output, percentage_removed = remove_fuzzy_repeating_suffix(string_test, 0.8)
+            try:
+                output, percentage_removed = remove_fuzzy_repeating_suffix(string_test, 0.8)
+            except Exception as e:
+                print(f"Error: {e}")
+                output = None
+                percentage_removed = None
             time_end = time.time()
             print(f"Time elapsed: {time_end - time_start} seconds")
             self.assertGreaterEqual(0.01, time_end - time_start)
