@@ -1,5 +1,4 @@
 import sys
-
 sys.path.insert(0, r"./")
 from tqdm.auto import tqdm
 from datasets import load_dataset
@@ -13,7 +12,7 @@ from translator import (
 )
 
 
-PARSER_NAME = "KTOmix14kGroq"
+PARSER_NAME = "KTOmix14kGroq_first2k"
 
 
 # The parser callback is used to process the converted data and translated data before saving it, this is useful for post-processing the data so that it compatible with the trl's KTOTrainer
@@ -64,7 +63,7 @@ class KTOmix14kGroq(DataParser):
         file_path: str,
         output_path: str,
         target_lang: str = "vi",
-        max_example_per_thread=10,
+        max_example_per_thread=3,
         max_example_length=15000,
         large_chunks_threshold=200,
         max_list_length_per_thread=1, # GroqProvider JSON mode is still in beta and is unreliable, so we limit the list length to 1 so it can be translate as a single string for list of strings
@@ -78,7 +77,6 @@ class KTOmix14kGroq(DataParser):
             verbose=False, # Set verbose to True to see extra info of the parser process
             target_config=KTOConfig,
             target_fields=[
-                "system_prompt",
                 "conversation_history",
                 "agent_prompt_completion",
             ],
@@ -134,7 +132,7 @@ class KTOmix14kGroq(DataParser):
                 data_converted.append(data_dict)
 
         # Be sure to assign the final data list to self.converted_data
-        self.converted_data = data_converted
+        self.converted_data = data_converted[:2000] # Keep this low so that you don't exceed max request per day
 
         return None
 

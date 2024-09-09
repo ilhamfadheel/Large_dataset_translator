@@ -10,7 +10,11 @@
   <a href="https://colab.research.google.com/drive/1OEni8c9N9C_9Kf3ySt87goN7HDvRN3nw?usp=sharing">
     <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab">
   </a>
+  <a href="https://www.kaggle.com/code/tuanphamm/groq-translation-public">
+    <img src="https://kaggle.com/static/images/open-in-kaggle.svg" alt="Open In Kaggle"> 
+  </a>
 </p>
+
 
 The Large Dataset Translator is a powerful solution designed to efficiently translate large datasets into various languages. It offers a streamlined and parallelized translation process, ensuring fast results without the need for an API key. The tool supports multithreaded processing, enabling users to translate extensive datasets in less time. It also includes an automatic fail-restart mechanism, ensuring uninterrupted translation in case of any issues.
 
@@ -90,8 +94,10 @@ or locally with:
 ```sh
 python examples/argilla-magpie-ultra-v0.1-groq/MagpieUltraV01.py
 ```
-
 ##### [trl-lib/kto-mix-14k](https://huggingface.co/datasets/trl-lib/kto-mix-14k)
+   <a href="https://www.kaggle.com/code/tuanphamm/groq-translation-public">
+    <img src="https://kaggle.com/static/images/open-in-kaggle.svg" alt="Open In Kaggle"> 
+
 ```sh
 %run examples/kto-mix-14k-groq/KTOmix14k_groq_Parser.py
 ```
@@ -102,7 +108,10 @@ python examples/kto-mix-14k-groq/KTOmix14k_groq_Parser.py
 
 This script is capable of translating approximately 100 examples every 6-7 minutes using Groq. To use it, you will need to obtain a free [API key](https://console.groq.com/keys) and set the environment variable by executing `export GROQ_API_KEY=<your_api_key>`.
 
-An example dataset that has utilized the above script: [1TuanPham/Vietnamese-magpie-ultra-v0.1](https://huggingface.co/datasets/1TuanPham/Vietnamese-magpie-ultra-v0.1)
+Datasets that has utilized the above script: 
+* [1TuanPham/Vietnamese-magpie-ultra-v0.1](https://huggingface.co/datasets/1TuanPham/Vietnamese-magpie-ultra-v0.1) 
+* [1TuanPham/KTO-mix-14k-vietnamese-groq](https://huggingface.co/datasets/1TuanPham/KTO-mix-14k-vietnamese-groq)
+
 
 
 ## Usage
