@@ -1,5 +1,6 @@
 from typing import Union, List
 from abc import ABC, abstractmethod
+from memoization import cached
 
 
 class Provider(ABC):
@@ -16,7 +17,8 @@ class Provider(ABC):
                       fail_translation_code:str = "P1OP1_F",
                       **kwargs) -> Union[str, List[str]]:
         raise NotImplemented(" The function _do_translate has not been implemented.")
-
+    
+    @cached(max_size=5000, ttl=400, thread_safe=False)
     def translate(self, input_data: Union[str, List[str]],
                   src: str, dest: str,
                   fail_translation_code: str="P1OP1_F") -> Union[str, List[str]]:

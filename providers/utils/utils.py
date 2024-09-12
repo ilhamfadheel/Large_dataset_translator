@@ -1,50 +1,81 @@
+import random
+import time
+import hashlib
 from functools import wraps
 from threading import Lock
-import time
-from typing import Any, Dict
+from typing import (
+    Any,
+    Dict,
+    Callable,
+    List,
+    Union,
+    Set,
+    Tuple,
+)
 from collections import deque
 
 from fuzzywuzzy import fuzz
 from pydantic import BaseModel, Field, create_model
 
-from typing import Callable
-from threading import Lock
-import time
-from functools import wraps
 
-
-def throttle(calls_per_minute: int, verbose: bool=False) -> Callable:
+def throttle(calls_per_minute: int, break_interval: float = 0, break_duration: float = 0, jitter: float = 0, verbose: bool = False) -> Callable:
     """
-    Decorator that limits the number of function calls per minute.
-
+    Decorator that limits the number of function calls per minute, adds periodic breaks, and includes jitter.
+    
     Args:
         calls_per_minute (int): The maximum number of function calls allowed per minute.
+        break_interval (float, optional): The time period (in seconds) after which a break is taken. Defaults to 0 (no break).
+        break_duration (float, optional): The duration (in seconds) of the break after the break_interval. Defaults to 0 (no break).
+        jitter (float, optional): Maximum amount of random jitter to add to wait times, in seconds. Defaults to 0.
         verbose (bool, optional): If True, prints additional information about the throttling process. Defaults to False.
-
+    
     Returns:
         Callable: The decorated function.
-
+    
     Example:
-        @throttle(calls_per_minute=10, verbose=True)
+        @throttle(calls_per_minute=10, break_interval=120, break_duration=10, jitter=1, verbose=True)
         def my_function():
             print("Executing my_function")
-
-        my_function()  # Calls to my_function will be throttled to 10 calls per minute.
+        
+        my_function()  # Calls to my_function will be throttled with jitter and include a periodic break.
     """
     interval = 60.0 / calls_per_minute
     lock = Lock()
     last_call = [0.0]
+    execution_start_time = [0.0]  # Track the start time of execution
+
+    def add_jitter(delay: float) -> float:
+        return delay + random.uniform(0, jitter)
 
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
+            nonlocal execution_start_time
             with lock:
-                elapsed = time.time() - last_call[0]
-                wait_time = interval - elapsed
-                if wait_time > 0:
+                current_time = time.time()
+                elapsed = current_time - last_call[0]
+                base_wait_time = max(interval - elapsed, 0)
+                jittered_wait_time = add_jitter(base_wait_time)
+
+                # Initialize execution_start_time if it's the first call
+                if execution_start_time[0] == 0.0:
+                    execution_start_time[0] = current_time
+
+                # Check for periodic break
+                if break_interval > 0:
+                    time_since_start = current_time - execution_start_time[0]
+                    if time_since_start >= break_interval:
+                        jittered_break_duration = add_jitter(break_duration)
+                        if verbose:
+                            print(f"Taking a break for {jittered_break_duration:.4f} seconds after {break_interval} seconds of execution.")
+                        time.sleep(jittered_break_duration)
+                        execution_start_time[0] = time.time()  # Reset execution start time after break
+
+                if jittered_wait_time > 0:
                     if verbose:
-                        print(f"Throttling: waiting for {wait_time:.4f} seconds before calling {func.__name__}")
-                    time.sleep(wait_time)
+                        print(f"Throttling: waiting for {jittered_wait_time:.4f} seconds before calling {func.__name__}")
+                    time.sleep(jittered_wait_time)
+
                 last_call[0] = time.time()
                 if verbose:
                     print(f"Calling function {func.__name__} at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(last_call[0]))}")
@@ -94,6 +125,48 @@ def brust_throttle(calls_per_minute: int, verbose: bool=False, extra_delay: floa
     return decorator
 
 
+def hash_input(value: Union[str, List[str]]) -> str:
+    """
+    Hashes the input value using MD5.
+
+    :param value: The input value to hash.
+    :return: The MD5 hash of the input value.
+    """
+
+    if isinstance(value, list):
+        # Ensure all elements in the list are strings
+        if not all(isinstance(item, str) for item in value):
+            raise ValueError("All elements of the list must be strings.")
+        value = ''.join(value)
+    elif not isinstance(value, str):
+        value = str(value)
+    
+    return hashlib.md5(value.encode('utf-8')).hexdigest()
+
+
+def pop_half_set(s: Set) -> Tuple[Set, Set]:
+    """Pop half of the elements from the set s."""
+    num_to_pop = len(s) // 2
+    popped_elements: Set = set()
+    
+    for _ in range(num_to_pop):
+        popped_elements.add(s.pop())
+    
+    return popped_elements, s
+
+
+def pop_half_dict(d: Dict) -> Tuple[Dict, Dict]:
+    """Pop half of the elements from the dictionary d."""
+    num_to_pop = len(d) // 2
+    keys_to_pop = list(d.keys())[:num_to_pop]
+    popped_elements: Dict = {}
+    
+    for key in keys_to_pop:
+        popped_elements[key] = d.pop(key)
+    
+    return popped_elements, d
+
+
 def create_dynamic_model(model_name: str, fields: Dict[str, Any]) -> BaseModel:
     """
     Create a dynamic Pydantic model.
@@ -116,7 +189,6 @@ def fuzzy_match(input_string, comparison_strings: list, threshold=80, disable_fu
     """
     
     for comparison_string in comparison_strings:
-
         if fuzz.ratio(input_string, comparison_string) >= threshold and not disable_fuzzy:
             return True
         else:
