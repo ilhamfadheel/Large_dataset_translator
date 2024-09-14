@@ -1,6 +1,13 @@
-from typing import Union, List
 from abc import ABC, abstractmethod
+from typing import Union, List
+
 from memoization import cached
+from tenacity import (
+    retry,
+    stop_after_delay,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 
 class Provider(ABC):
@@ -29,6 +36,7 @@ class Provider(ABC):
         raise NotImplemented(" The function _do_translate has not been implemented.")
     
     @cached(max_size=10000, thread_safe=False)
+    @retry(stop=(stop_after_attempt(6) | stop_after_delay(120)), wait=wait_random_exponential(multiplier=1, max=30), reraise=True)
     def translate(self, input_data: Union[str, List[str]], src: str, dest: str, fail_translation_code: str="P1OP1_F") -> Union[str, List[str]]:
         """
         Translates the input data from the source language to the destination language using the assigned translator object.

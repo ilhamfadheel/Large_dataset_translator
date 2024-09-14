@@ -177,6 +177,7 @@ class GroqProvider(Provider):
             final_result = output.choices[0].message.content
             # Clean the translation output if the model repeat the prefix and postfix prompt
             final_result = final_result.replace(prefix_prompt, "").replace(postfix_prompt, "").strip()
+
         try:
             if data_type == "list":
                 cleaned_output = []

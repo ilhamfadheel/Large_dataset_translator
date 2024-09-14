@@ -18,9 +18,17 @@ from fuzzywuzzy import fuzz
 from pydantic import BaseModel, Field, create_model
 
 
-def throttle(calls_per_minute: int, break_interval: float = 0, break_duration: float = 0, jitter: float = 0, verbose: bool = False) -> Callable:
+def throttle(
+    calls_per_minute: int,
+    break_interval: float = 0,
+    break_duration: float = 0,
+    jitter: float = 0,
+    verbose: bool = False,
+    additional_wait_func: Callable[[], int] = None
+) -> Callable:
     """
-    Decorator that limits the number of function calls per minute, adds periodic breaks, and includes jitter.
+    Decorator that limits the number of function calls per minute, adds periodic breaks,
+    includes jitter, and allows for additional dynamic wait time.
     
     Args:
         calls_per_minute (int): The maximum number of function calls allowed per minute.
@@ -28,16 +36,20 @@ def throttle(calls_per_minute: int, break_interval: float = 0, break_duration: f
         break_duration (float, optional): The duration (in seconds) of the break after the break_interval. Defaults to 0 (no break).
         jitter (float, optional): Maximum amount of random jitter to add to wait times, in seconds. Defaults to 0.
         verbose (bool, optional): If True, prints additional information about the throttling process. Defaults to False.
+        additional_wait_func (Callable[[], int], optional): A function that returns an integer number of seconds to be added to the wait time. Defaults to None.
     
     Returns:
         Callable: The decorated function.
     
     Example:
-        @throttle(calls_per_minute=10, break_interval=120, break_duration=10, jitter=1, verbose=True)
+        def dynamic_wait():
+            return random.randint(1, 5)  # Returns a random wait time between 1 and 5 seconds
+
+        @throttle(calls_per_minute=10, break_interval=120, break_duration=10, jitter=1, verbose=True, additional_wait_func=dynamic_wait)
         def my_function():
             print("Executing my_function")
         
-        my_function()  # Calls to my_function will be throttled with jitter and include a periodic break.
+        my_function()  # Calls to my_function will be throttled with jitter, include a periodic break, and have additional dynamic wait time.
     """
     interval = 60.0 / calls_per_minute
     lock = Lock()
@@ -56,6 +68,13 @@ def throttle(calls_per_minute: int, break_interval: float = 0, break_duration: f
                 elapsed = current_time - last_call[0]
                 base_wait_time = max(interval - elapsed, 0)
                 jittered_wait_time = add_jitter(base_wait_time)
+
+                # Add additional wait time if the function is provided
+                if additional_wait_func:
+                    additional_wait = additional_wait_func()
+                    jittered_wait_time += additional_wait
+                    if verbose:
+                        print(f"Adding {additional_wait} seconds of additional wait time")
 
                 # Initialize execution_start_time if it's the first call
                 if execution_start_time[0] == 0.0:
