@@ -84,7 +84,7 @@ def throttle(calls_per_minute: int, break_interval: float = 0, break_duration: f
     return decorator
 
 
-def brust_throttle(calls_per_minute: int, verbose: bool=False, extra_delay: float=1.25):
+def brust_throttle(calls_per_minute: int, verbose: bool=False, extra_delay: float=1.25) -> Callable:
     """
     Throttles function calls to a specified rate, with an optional extra delay.
     

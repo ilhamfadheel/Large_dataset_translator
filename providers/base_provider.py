@@ -12,23 +12,38 @@ class Provider(ABC):
         self.translator = None
 
     @abstractmethod
-    def _do_translate(self, input_data: Union[str, List[str]],
-                      src: str, dest: str,
-                      fail_translation_code:str = "P1OP1_F",
-                      **kwargs) -> Union[str, List[str]]:
+    def _do_translate(self, input_data: Union[str, List[str]], src: str, dest: str, fail_translation_code:str = "P1OP1_F", **kwargs) -> Union[str, List[str]]:
+        """
+        Perform translation of input data from source language to destination language.
+
+        Args:
+            input_data (Union[str, List[str]]): The input data to be translated. It can be a single string or a list of strings.
+            src (str): The source language code.
+            dest (str): The destination language code.
+            fail_translation_code (str, optional): The code to be returned when translation fails. Defaults to "P1OP1_F".
+            **kwargs: Additional keyword arguments for translation.
+
+        Returns:
+            Union[str, List[str]]: The translated output data. It can be a single string or a list of strings.
+        """
         raise NotImplemented(" The function _do_translate has not been implemented.")
     
-    @cached(max_size=5000, ttl=400, thread_safe=False)
-    def translate(self, input_data: Union[str, List[str]],
-                  src: str, dest: str,
-                  fail_translation_code: str="P1OP1_F") -> Union[str, List[str]]:
+    @cached(max_size=10000, thread_safe=False)
+    def translate(self, input_data: Union[str, List[str]], src: str, dest: str, fail_translation_code: str="P1OP1_F") -> Union[str, List[str]]:
         """
-        Translate text input_data from a language to another language
-        :param input_data: The input_data (Can be string or list of strings)
-        :param src: The source lang of input_data
-        :param dest: The target lang you want input_data to be translated
-        :param fail_translation_code: The code that can be use for unavoidable translation error and can be remove post translation
-        :return: str or list of str
+        Translates the input data from the source language to the destination language using the assigned translator object.
+        Args:
+            input_data (Union[str, List[str]]): The input data to be translated. It can be either a string or a list of strings.
+            src (str): The source language code.
+            dest (str): The destination language code.
+            fail_translation_code (str, optional): The code to be returned in case of translation failure. Defaults to "P1OP1_F".
+        Returns:
+            Union[str, List[str]]: The translated output data. It will have the same type as the input data.
+        Raises:
+            TypeError: If the input_data is not of type str or List[str], or if the elements of input_data list are not of type str.
+        Notes:
+            - The translator object instance must be assigned to self.translator before calling this method.
+            - The translation is performed by calling the _do_translate() method.
         """
 
         # Type check for input_data
@@ -43,7 +58,8 @@ class Provider(ABC):
 
         # Perform the translation
         translated_instance = self._do_translate(input_data,
-                                                 src=src, dest=dest,
+                                                 src=src,
+                                                 dest=dest,
                                                  fail_translation_code=fail_translation_code)
 
         assert type(input_data) == type(translated_instance),\

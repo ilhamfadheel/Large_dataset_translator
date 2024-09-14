@@ -137,11 +137,9 @@ class GroqProvider(Provider):
                 }
             ],
             "model": "llama3-8b-8192",
-            "temperature": 0.45,
-            "top_p": 0.5,
+            "temperature": 0.5,
+            "top_p": 0.65,
             "max_tokens": 8000,
-            "frequency_penalty": 0.4,
-            "presence_penalty": 0.25,
             "stream": False,
         }
 
@@ -154,7 +152,6 @@ class GroqProvider(Provider):
         
         # Clear the cache if the cache is too large
         if len(CACHE_INIT_PROMPT) > 5:
-            CACHE_INIT_PROMPT.pop()
             _, CACHE_INIT_PROMPT = pop_half_dict(CACHE_INIT_PROMPT)
         if len(CACHE_FAIL_PROMPT) > 10000:
             _, CACHE_FAIL_PROMPT = pop_half_set(CACHE_FAIL_PROMPT)

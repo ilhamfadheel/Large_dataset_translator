@@ -147,18 +147,44 @@ class DataParser(metaclass=ForceBaseCallMeta):
 
     @property
     def get_translator(self) -> Provider:
+        """
+        Returns a deep copy of the translator object.
+
+        Returns:
+            Provider: A deep copy of the translator object.
+        """
         return deepcopy(self.translator)()
 
     @staticmethod
-    def id_generator(size=6, chars=string.ascii_uppercase + string.digits) -> str:
+    def id_generator(size: int = 6, chars: str = string.ascii_uppercase + string.digits) -> str:
+        """
+        Generate a random string of specified size using the given characters.
+
+        Parameters:
+        - size (int): The length of the generated string. Default is 6.
+        - chars (str): The characters to be used for generating the string. Default is a combination of uppercase letters and digits.
+
+        Returns:
+        - str: The randomly generated string.
+        """
         return ''.join(random.choice(chars) for _ in range(size))
 
     @staticmethod
     def split_list(input_list: List[str], max_sub_length: int) -> List[list]:
+        """
+        Splits a list into sublists of a maximum specified length.
+
+        Args:
+            input_list (List[str]): The input list to be split.
+            max_sub_length (int): The maximum length of each sublist.
+
+        Returns:
+            List[list]: A list of sublists, where each sublist has a maximum length of max_sub_length.
+        """
         return [input_list[x:x + max_sub_length] for x in range(0, len(input_list), max_sub_length)]
     
     @staticmethod
-    def flatten_list(nested_list: list) -> list:
+    def flatten_list(nested_list: List) -> List:
         '''
         Turn a list from [[], [], []] -> []
         '''
