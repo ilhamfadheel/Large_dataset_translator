@@ -1,4 +1,17 @@
 def get_language_name(code: str) -> str:
+    """
+    Retrieves the language name based on the given language code.
+
+    Args:
+        code (str): The language code.
+
+    Returns:
+        str: The corresponding language name.
+
+    Raises:
+        KeyError: If the language code is not found in the language map.
+    """
+
     language_map = {
         "af": "Afrikaans",
         "af-ZA": "Afrikaans (South Africa)",

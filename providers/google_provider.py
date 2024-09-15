@@ -2,6 +2,7 @@ import sys
 from typing import Union, List
 sys.path.insert(0, r'/')
 from googletrans import Translator
+from googletrans.models import Translated
 
 try:
     from .base_provider import Provider
@@ -14,10 +15,10 @@ class GoogleProvider(Provider):
     def __init__(self):
         self.translator = Translator()
 
-    def extract_texts(self, obj):
-        '''
-        Extract .text attribute from Translator object
-        '''
+    def extract_texts(self, obj: Union[Translated, List[Translated]]) -> Union[str, List[str]]:
+        """
+        Extract .text attribute from Translated object
+        """
 
         if isinstance(obj, list):
             return [self.extract_texts(item) for item in obj]

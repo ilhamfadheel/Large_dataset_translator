@@ -1,13 +1,20 @@
 from abc import ABC, abstractmethod
 from typing import Union, List
 
-from memoization import cached
+import memoization
+memoization.suppress_warnings()
+from memoization import cached, CachingAlgorithmFlag
 from tenacity import (
     retry,
     stop_after_delay,
     stop_after_attempt,
     wait_random_exponential,
 )
+
+try:
+    from .utils import hash_input
+except ImportError:
+    from utils import hash_input
 
 
 class Provider(ABC):
@@ -34,8 +41,24 @@ class Provider(ABC):
             Union[str, List[str]]: The translated output data. It can be a single string or a list of strings.
         """
         raise NotImplemented(" The function _do_translate has not been implemented.")
+
+    def __get_hashable_key(self, input_data: Union[str, List[str]], src: str, dest: str, fail_translation_code: str="P1OP1_F") -> str:
+        """
+        Generate a hashable key for the input data, source language, destination language, and fail_translation_code.
+
+        Args:
+            input_data (Union[str, List[str]]): The input data to be translated. It can be a single string or a list of strings.
+            src (str): The source language code.
+            dest (str): The destination language code.
+            fail_translation_code (str, optional): The code to be returned when translation fails. Defaults to "P1OP1_F".
+
+        Returns:
+            str: The hashable key for the input data, source language, destination language, and fail_translation_code.
+        """
+
+        return f"{src}-{dest}-{hash_input(input_data, hash=False)}-{fail_translation_code}"
     
-    @cached(max_size=10000, thread_safe=False)
+    @cached(max_size=10000, thread_safe=False, custom_key_maker=__get_hashable_key, algorithm=CachingAlgorithmFlag.LRU)
     @retry(stop=(stop_after_attempt(6) | stop_after_delay(120)), wait=wait_random_exponential(multiplier=1, max=30), reraise=True)
     def translate(self, input_data: Union[str, List[str]], src: str, dest: str, fail_translation_code: str="P1OP1_F") -> Union[str, List[str]]:
         """

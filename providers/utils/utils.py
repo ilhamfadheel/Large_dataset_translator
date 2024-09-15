@@ -105,11 +105,17 @@ def throttle(
 
 def brust_throttle(calls_per_minute: int, verbose: bool=False, extra_delay: float=1.25) -> Callable:
     """
-    Throttles function calls to a specified rate, with an optional extra delay.
-    
-    :param calls_per_minute: Maximum number of calls allowed per minute.
-    :param verbose: If True, prints information about throttling.
-    :param extra_delay: Additional delay in seconds after the 1-minute window.
+    Decorator function that limits the number of calls to a function per minute.
+    Args:
+        calls_per_minute (int): The maximum number of calls allowed per minute.
+        verbose (bool, optional): If True, print messages when rate limit is exceeded. Defaults to False.
+        extra_delay (float, optional): Additional delay in seconds to wait after rate limit is exceeded. Defaults to 1.25.
+    Returns:
+        Callable: The decorated function.
+    Example:
+        @brust_throttle(calls_per_minute=10, verbose=True, extra_delay=0.5)
+        def my_function():
+            # function implementation
     """
     last_calls = deque()
 
@@ -144,14 +150,17 @@ def brust_throttle(calls_per_minute: int, verbose: bool=False, extra_delay: floa
     return decorator
 
 
-def hash_input(value: Union[str, List[str]]) -> str:
+def hash_input(value: Union[str, List[str]], hash: bool = True) -> str:
     """
-    Hashes the input value using MD5.
-
-    :param value: The input value to hash.
-    :return: The MD5 hash of the input value.
+    Hashes the input value using MD5 algorithm and returns the hash value as a string.
+    Parameters:
+        value (Union[str, List[str]]): The value to be hashed. It can be either a string or a list of strings.
+        hash (bool, optional): Specifies whether to hash the input value or not. Defaults to True.
+    Returns:
+        str: The hash value as a string.
+    Raises:
+        ValueError: If the input value is a list and contains elements that are not strings.
     """
-
     if isinstance(value, list):
         # Ensure all elements in the list are strings
         if not all(isinstance(item, str) for item in value):
@@ -160,7 +169,7 @@ def hash_input(value: Union[str, List[str]]) -> str:
     elif not isinstance(value, str):
         value = str(value)
     
-    return hashlib.md5(value.encode('utf-8')).hexdigest()
+    return hashlib.md5(value.encode('utf-8')).hexdigest() if hash else value
 
 
 def pop_half_set(s: Set) -> Tuple[Set, Set]:
@@ -188,23 +197,28 @@ def pop_half_dict(d: Dict) -> Tuple[Dict, Dict]:
 
 def create_dynamic_model(model_name: str, fields: Dict[str, Any]) -> BaseModel:
     """
-    Create a dynamic Pydantic model.
+    Create a dynamic model with the given model name and fields.
 
-    :param model_name: Name of the model.
-    :param fields: Dictionary where keys are field names and values are field types.
-    :return: A Pydantic BaseModel class.
+    Args:
+        model_name (str): The name of the model.
+        fields (Dict[str, Any]): A dictionary containing the fields of the model.
+
+    Returns:
+        BaseModel: The dynamically created model.
     """
     return create_model(model_name, **fields)
 
 
 def fuzzy_match(input_string, comparison_strings: list, threshold=80, disable_fuzzy: bool=False):
     """
-    Check if two strings are similar based on the Levenshtein distance.
-
-    :param input_string: The input string.
-    :param comparison_string: The string to compare with.
-    :param threshold: The minimum similarity ratio required to consider the strings similar.
-    :return: True if the strings are similar, False otherwise.
+    Check if the input string matches any of the comparison strings using fuzzy matching.
+    Parameters:
+    - input_string (str): The input string to be matched.
+    - comparison_strings (list): A list of strings to compare against the input string.
+    - threshold (int, optional): The minimum fuzzy match ratio required for a match. Defaults to 80.
+    - disable_fuzzy (bool, optional): If True, disable fuzzy matching and only perform exact string comparison. Defaults to False.
+    Returns:
+    - bool: True if a match is found, False otherwise.
     """
     
     for comparison_string in comparison_strings:

@@ -185,9 +185,9 @@ class DataParser(metaclass=ForceBaseCallMeta):
     
     @staticmethod
     def flatten_list(nested_list: List) -> List:
-        '''
+        """
         Turn a list from [[], [], []] -> []
-        '''
+        """
 
         flattened_list = []
         for item in nested_list:
@@ -246,10 +246,10 @@ class DataParser(metaclass=ForceBaseCallMeta):
         self.converted_data_translated = post_validated_translate_data
 
     def __translate_per_key(self, example: Dict, translator: Provider = None, progress_idx: int = 0) -> Dict:
-        '''
+        """
         This function loop through each key of one example and send to __translate_texts if the value of the key is
         under a certain threshold. If exceeded, then send to __sublist_multithread_translate
-        '''
+        """
 
         assert self.do_translate, "Please enable translate via self.do_translate"
         keys = self.target_config.get_keys()
@@ -294,10 +294,10 @@ class DataParser(metaclass=ForceBaseCallMeta):
                                        progress_idx: int = 0,
                                        field_name: str=None # The field name (key name) of one example that exceed a certain threshold and needed to be split and translate in parallel
                                        ) -> List[str]:
-        '''
+        """
         This function split a large list into sub-list and translate it in parallel, orders are maintained when merge all
         sub-lists, this is useful when order are necessary (e.g Dialogs example)
-        '''
+        """
 
         translated_list_data = []
         num_threads = len(list_str) / self.max_list_length_per_thread
@@ -370,9 +370,9 @@ class DataParser(metaclass=ForceBaseCallMeta):
                           translator: Provider = None,
                           sub_list_idx: int=None, # sub_list_idx is for pass through of index information and can be merge later by __sublist_multithread_translate
                           ) -> Union[List[str], str, Dict[List[str], int]]:
-        '''
+        """
         Actual place where translation take place
-        '''
+        """
 
         list_bypass = False
         if type(src_texts) == list:
@@ -409,10 +409,10 @@ class DataParser(metaclass=ForceBaseCallMeta):
                             desc: str = None,
                             translator: Provider = None,
                             large_chunk: List[str] = None) -> Union[None, List[str]]:
-        '''
+        """
         This function support translation in multithread for large dataset
         (Does not maintain order for the final dataset)
-        '''
+        """
 
         assert self.converted_data is not None or en_data is not None or large_chunk is not None, \
             "Please implement the convert function for DataParser " \
@@ -553,10 +553,10 @@ class DataParser(metaclass=ForceBaseCallMeta):
     @no_args_method
     @timeit
     def save(self) -> None:
-        '''
+        """
         Save the correct format that pyarrow supported, which is "line-delimited JSON" and can be load by
         huggingface-datasets load_datasets function
-        '''
+        """
         
         if self.parser_callbacks:
             for callback in self.parser_callbacks:
