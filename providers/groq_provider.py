@@ -158,7 +158,7 @@ class GroqProvider(Provider):
         prefix_prompt = f"{prefix_prompt_block}\n"
         prefix_prompt += prefix_separator
         postfix_prompt = postfix_separator
-        postfix_prompt = f"\n{postfix_prompt_block}"
+        postfix_prompt += f"\n{postfix_prompt_block}"
 
         translated_system_prompt += "\n\n" + postfix_system_prompt if postfix_system_prompt else ""
         translated_prompt = prefix_prompt + "\n\n" + prompt + "\n\n" + postfix_prompt + "\n\n" + translated_postfix_prompt
@@ -181,6 +181,9 @@ class GroqProvider(Provider):
             "max_tokens": 8000,
             "stream": False,
         }
+        
+        print(f"System prompt: {translated_system_prompt}\n")
+        print(f"User prompt: {translated_prompt}\n")
 
         if data_type == "list":
             chat_args["response_format"] = {"type": "json_object"}
