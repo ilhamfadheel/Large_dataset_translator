@@ -1,2 +1,2 @@
 from .wrappers import force_super_call, ForceBaseCallMeta, no_args_method
-from .utils import timeit, have_internet
+from .utils import timeit, have_internet, safe_tqdm_write

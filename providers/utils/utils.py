@@ -161,14 +161,15 @@ def hash_input(value: Union[str, List[str]], hash: bool = True) -> str:
     Raises:
         ValueError: If the input value is a list and contains elements that are not strings.
     """
+
     if isinstance(value, list):
         # Ensure all elements in the list are strings
         if not all(isinstance(item, str) for item in value):
             raise ValueError("All elements of the list must be strings.")
-        value = ''.join(value)
+        value = ''.join(value) + f"list_{len(value)}"
     elif not isinstance(value, str):
         value = str(value)
-    
+        
     return hashlib.md5(value.encode('utf-8')).hexdigest() if hash else value
 
 

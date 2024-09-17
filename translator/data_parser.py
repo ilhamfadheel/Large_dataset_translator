@@ -32,6 +32,7 @@ from .utils import (
     no_args_method,
     timeit,
     have_internet,
+    safe_tqdm_write
 )
 from .filters import have_code, have_re_code
 
@@ -217,14 +218,14 @@ class DataParser(metaclass=ForceBaseCallMeta):
                     if contain_code:
                         example_filters += 1
                         if len(self.converted_data) - 2 == idx:
-                            tqdm.write(f"Number of example with code: {example_filters}")
+                            safe_tqdm_write(f"Number of example with code: {example_filters}")
                         break
                     elif key == self.target_fields[-1]:
                         validated_translate_data.append(example)
                 else:
                     if key == self.target_fields[-1]: validated_translate_data.append(example)
 
-        tqdm.write(f"\nTotal data left after filtering for translation: {len(validated_translate_data)}\n")
+        safe_tqdm_write(f"\nTotal data left after filtering for translation: {len(validated_translate_data)}\n")
         self.converted_data = validated_translate_data
 
     @timeit
@@ -237,12 +238,12 @@ class DataParser(metaclass=ForceBaseCallMeta):
                 if have_re_code(example[key], code=self.fail_translation_code):
                     example_filters += 1
                     if len(self.converted_data_translated) - 2 == idx:
-                        tqdm.write(f"Number of example with fail code: {example_filters}")
+                        safe_tqdm_write(f"Number of example with fail code: {example_filters}")
                     break
                 elif key == self.target_fields[-1]:
                     post_validated_translate_data.append(example)
 
-        tqdm.write(f"\nTotal data left after filtering fail translation: {len(post_validated_translate_data)}\n")
+        safe_tqdm_write(f"\nTotal data left after filtering fail translation: {len(post_validated_translate_data)}\n")
         self.converted_data_translated = post_validated_translate_data
 
     def __translate_per_key(self, example: Dict, translator: Provider = None, progress_idx: int = 0) -> Dict:
@@ -276,13 +277,13 @@ class DataParser(metaclass=ForceBaseCallMeta):
                             average_length_sub_task_criteria = True
                     if type == "list" and average_length_sub_task_criteria and len(example[key]) >= self.max_list_length_per_thread:
                         if self.verbose:
-                            tqdm.write(f"\nSplitting {key} field which contain {len(example[key])} items on chunk {progress_idx}\n")
+                            safe_tqdm_write(f"\nSplitting {key} field which contain {len(example[key])} items on chunk {progress_idx}\n")
                         example[key] = self.__sublist_multithread_translate(example[key],
                                                                             progress_idx,
                                                                             key)
                     else:
                         if self.verbose:
-                            tqdm.write(f"\nTranslating {key} field which contain string of length {len(example[key])} on chunk {progress_idx}\n")
+                            safe_tqdm_write(f"\nTranslating {key} field which contain string of length {len(example[key])} on chunk {progress_idx}\n")
                         example[key] = self.__translate_texts(src_texts=example[key], translator=translator)
                 else:
                     example[key] = self.__translate_texts(src_texts=example[key], translator=translator)
@@ -318,10 +319,10 @@ class DataParser(metaclass=ForceBaseCallMeta):
                         translated_list_data.append(future.result())
                         finished_task += 1
                 else:
-                    tqdm.write(f"Sub task of chunk {progress_idx} with field {field_name} failed with the following error: {future.exception()}."
+                    safe_tqdm_write(f"Sub task of chunk {progress_idx} with field {field_name} failed with the following error: {future.exception()}."
                                f"Restarting thread when others finished...")
                     if self.verbose:
-                        tqdm.write(f"Error traceback: {traceback.format_exc()}")
+                        safe_tqdm_write(f"Error traceback: {traceback.format_exc()}")
                     if self.parser_callbacks:
                         for callback in self.parser_callbacks:
                             callback.on_error_translate(self, future.exception())
@@ -345,7 +346,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
                 for future_dict in futures:
                     # If exception occurs in one of the thread, restart the thread with its specific chunk
                     if future_dict['future'].exception():
-                        tqdm.write(
+                        safe_tqdm_write(
                             f"Thread {future_dict['idx']} failed, restarting thread with chunk {future_dict['idx']}")
                         backup_future_chunk = executor.submit(self.__translate_texts,
                                                               src_texts=sub_str_lists[future_dict['idx']],
@@ -380,15 +381,15 @@ class DataParser(metaclass=ForceBaseCallMeta):
                 src_texts = src_texts[0]
                 list_bypass = True
                 if self.verbose:
-                    tqdm.write(f"List contain only one element, extract the element and translate...")
+                    safe_tqdm_write(f"List contain only one element, extract the element and translate...")
             if len(src_texts) == 0:
                 if self.verbose:
-                    tqdm.write(f"Empty list, skipping...")
+                    safe_tqdm_write(f"Empty list, skipping...")
                 return src_texts
         else:
             if len(src_texts) == 0:
                 if self.verbose:
-                    tqdm.write(f"Empty string, skipping...")
+                    safe_tqdm_write(f"Empty string, skipping...")
                 return src_texts
 
         assert self.do_translate, "Please enable translate via self.do_translate"
@@ -431,11 +432,11 @@ class DataParser(metaclass=ForceBaseCallMeta):
         if len(converted_data) > self.large_chunks_threshold and large_chunk is None:
             num_large_chunks = len(converted_data) / self.large_chunks_threshold
             large_chunks = self.split_list(converted_data, max_sub_length=self.large_chunks_threshold)
-            tqdm.write(
+            safe_tqdm_write(
                 f"Data is way too large, spliting data into {num_large_chunks} large chunk for sequential translation")
 
             for idx, large_chunk in enumerate(tqdm(large_chunks, desc=f"Translating large chunk ", colour="red")): # Main thread progress bar
-                tqdm.write(f"Processing large chunk No: {idx}")
+                safe_tqdm_write(f"Processing large chunk No: {idx}")
                 self.translate_converted(large_chunk=large_chunk)
             return None
 
@@ -443,7 +444,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
         if len(converted_data) > self.max_example_per_thread and en_data is None:
             num_threads = len(converted_data) / self.max_example_per_thread
             chunks = self.split_list(converted_data, max_sub_length=self.max_example_per_thread)
-            tqdm.write(f"Data too large, splitting data into {num_threads} chunk, each chunk is {len(chunks[0])}"
+            safe_tqdm_write(f"Data too large, splitting data into {num_threads} chunk, each chunk is {len(chunks[0])}"
                        f" Processing with multithread...")
 
             # Progress bar
@@ -468,10 +469,10 @@ class DataParser(metaclass=ForceBaseCallMeta):
                             finished_task += 1
                             progress_bar.update(1)
                     else:
-                        tqdm.write(f"Task failed with the following error: {future.exception()}."
+                        safe_tqdm_write(f"Task failed with the following error: {future.exception()}."
                                    f" Restarting thread when others finished")
                         if self.verbose:
-                            tqdm.write(f"Error traceback: {traceback.format_exc()}")
+                            safe_tqdm_write(f"Error traceback: {traceback.format_exc()}")
                         if self.parser_callbacks:
                             for callback in self.parser_callbacks:
                                 callback.on_error_translate(self, future.exception())
@@ -494,7 +495,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
                     for future_dict in futures:
                         # If exception occurs in one of the thread, restart the thread with its specific chunk
                         if future_dict['future'].exception():
-                            tqdm.write(
+                            safe_tqdm_write(
                                 f"Thread {future_dict['idx']} failed, restarting thread with chunk {future_dict['idx']}")
                             backup_future_chunk = executor.submit(self.translate_converted,
                                                                   en_data=chunks[future_dict['idx']],
@@ -614,3 +615,4 @@ class DataParser(metaclass=ForceBaseCallMeta):
             if IN_COLAB:
                 print(f"\n Downloading converted translated data to local machine...")
                 files.download(output_translated_path)
+
