@@ -181,9 +181,6 @@ class GroqProvider(Provider):
             "max_tokens": 8000,
             "stream": False,
         }
-        
-        print(f"System prompt: {translated_system_prompt}\n")
-        print(f"User prompt: {translated_prompt}\n")
 
         if data_type == "list":
             chat_args["response_format"] = {"type": "json_object"}
