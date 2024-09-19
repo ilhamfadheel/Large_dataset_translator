@@ -74,17 +74,18 @@ class GroqProvider(Provider):
         return schema_prompt + json_prompt
     
     @staticmethod
-    def remove_brackets(text: str) -> str:
+    def remove_custom_brackets(text: str) -> str:
         """
-        Remove leading and trailing bracketed expressions from a given text.
+        Remove leading and trailing custom bracketed expressions from a given text.
+        Custom brackets are defined as {|[|{ and }|]|}.
 
         Args:
-            text (str): The input string from which bracketed expressions should be removed.
+            text (str): The input string from which custom bracketed expressions should be removed.
 
         Returns:
-            str: The text with leading and trailing bracketed expressions removed.
+            str: The text with leading and trailing custom bracketed expressions removed.
         """
-        pattern = r'^\s*\[.*?\]\s*|\s*\[.*?\]\s*$'
+        pattern = r'^\s*\{\|\[\|\{.*?\}\|\]\|\}\s*|\s*\{\|\[\|\{.*?\}\|\]\|\}\s*$'
         return re.sub(pattern, '', text, flags=re.DOTALL | re.MULTILINE)
 
     @throttle(calls_per_minute=28, verbose=False, break_interval=1200, break_duration=60, jitter=3)
@@ -150,8 +151,8 @@ class GroqProvider(Provider):
         else:
             translated_system_prompt, translated_postfix_prompt = CACHE_INIT_PROMPT[(src, dest)]
 
-        prefix_prompt_block = "[START_TRANSLATION_BLOCK]"
-        postfix_prompt_block = "[END_TRANSLATION_BLOCK]"
+        prefix_prompt_block = "{|[|{START_TRANSLATION_BLOCK}|]|}"
+        postfix_prompt_block = "{|[|{END_TRANSLATION_BLOCK}|]|}"
         prefix_separator = "=" * 10
         postfix_separator = "=" * 10
         
@@ -162,7 +163,6 @@ class GroqProvider(Provider):
 
         translated_system_prompt += "\n\n" + postfix_system_prompt if postfix_system_prompt else ""
         translated_prompt = prefix_prompt + "\n\n" + prompt + "\n\n" + postfix_prompt + "\n\n" + translated_postfix_prompt
-
 
         chat_args = {
             "messages": [
@@ -176,8 +176,8 @@ class GroqProvider(Provider):
                 }
             ],
             "model": "llama3-8b-8192",
-            "temperature": 0.25,
-            "top_p": 0.35,
+            "temperature": 0.3,
+            "top_p": 0.4,
             "max_tokens": 8000,
             "stream": False,
         }
@@ -229,7 +229,7 @@ class GroqProvider(Provider):
             # Clean the translation output if the model repeat the prefix and postfix prompt
             final_result = final_result.replace(prefix_separator, "").replace(postfix_separator, "")
             final_result = final_result.replace(prefix_prompt_block, "").replace(postfix_prompt_block, "")
-            final_result = self.remove_brackets(final_result).strip()
+            final_result = self.remove_custom_brackets(final_result).strip()
 
         try:
             if data_type == "list":
