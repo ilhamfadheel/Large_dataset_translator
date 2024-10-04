@@ -136,6 +136,18 @@ https://cloud.google.com/translate/docs/languages
 ## Known Issues
   * 'TypeError: "NoneType' object is not iterable"
      This issue is relevant to gender-specific translation, you can read more here https://github.com/ssut/py-googletrans/issues/260
+## Other use cases
+The tool can be used for various NLP tasks that can be parallelized with input and output data that can be represented as a list of strings or string. Some examples include:
+* Image captioning
+* Text summarization
+* Text generation
+* Text classification
+* Text to speech
+* Text to image
+
+Implementing these tasks requires creating a new Provider class that inherits from the `Provider` class and implements the `def __init__` and the `def _do_translate`. Config the throttle decorator to control the rate of requests.
+
+
 #### Feel free to star 🌟 the repository if the test was successful!
 #### Disclaimer: This repo is for private use only.
 
