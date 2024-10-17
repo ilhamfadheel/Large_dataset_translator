@@ -20,7 +20,7 @@ class MagpieUltraV01Parser(DataParser):
                          parser_name=PARSER_NAME,
                          target_config=BaseConfig,   # The data config to be validated to check if self implement "convert" function is correct or not,
                                                      # you must map the data form to the correct fields of the @dataclass in the configs/base_config.py
-                         target_fields=['question_text', 'orig_answer_texts'],   # The data fields to be translated (The fields belong to BaseConfig)
+                         target_fields=['instruction', 'input', 'output'],   # The data fields to be translated (The fields belong to BaseConfig)
                          do_translate=True,
                          no_translated_code=False, # Remove any instance of string that appears to be coding language (e.g. Python code, HTML, etc.)
                          translator=GroqProvider, # Groq is very slow but it is a high quality translator
@@ -33,9 +33,8 @@ class MagpieUltraV01Parser(DataParser):
         # The read function must call the read function in DataParser class
         # I just want to be sure that the file path is correct
         super(MagpieUltraV01Parser, self).read()
-
-        self.data_read = load_dataset("argilla/magpie-ultra-v0.1")
-        self.system_prompts = load_dataset("teilomillet/system_prompt")
+        self.data_read = load_dataset("yahma/alpaca-cleaned")
+        # self.system_prompts = load_dataset("teilomillet/system_prompt")
 
         return None
 
@@ -49,17 +48,10 @@ class MagpieUltraV01Parser(DataParser):
         for split in self.data_read:
             for data in tqdm(self.data_read[split], desc=f"Converting {split} data"):
                 data_dict = {}
-                random_index = random.randint(0, len(self.system_prompts['train']) - 1)
-
-                if random.random() < 0.5:
-                    data_dict['system_prompt'] = None
-                else:
-                    data_dict['system_prompt'] = self.system_prompts['train'][random_index]['prompt']
-
                 data_dict['qas_id'] = self.id_generator()
-                data_dict['question_text'] = data['instruction']
-                data_dict['orig_answer_texts'] = data['response']
-                data_dict['answer_lengths'] = None
+                data_dict['instruction'] = data['instruction']
+                data_dict['input'] = data['input']
+                data_dict['output'] = data['output']
 
                 data_converted.append(data_dict)
 

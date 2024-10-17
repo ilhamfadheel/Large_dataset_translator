@@ -18,11 +18,11 @@ class AlpacaCleaned(DataParser):
                          parser_name=PARSER_NAME,
                          target_config=BaseConfig,   # The data config to be validated to check if self implement "convert" function is correct or not,
                                                      # you must map the data form to the correct fields of the @dataclass in the configs/base_config.py
-                         target_fields=['question_text', 'orig_answer_texts'],   # The data fields to be translated (The fields belong to BaseConfig)
+                         target_fields=['instruction', 'input', 'output'],   # The data fields to be translated (The fields belong to BaseConfig)
                          do_translate=True,
                          no_translated_code=True, # If you don't want to translate the coding examples, set this to True
                          verbose=False,  # If you want to see the verbose output of the translation process, set this to True
-                         target_lang="vi")
+                         target_lang="id")
 
     # Read function must assign data that has been read to self.data_read
     def read(self) -> None:
@@ -60,16 +60,11 @@ class AlpacaCleaned(DataParser):
         for split in self.data_read:
             for data in tqdm(self.data_read[split], desc=f"Converting {split} data"):
                 data_dict = {}
-                # Randomly assign generic system prompt to data
-                data_dict['system_prompt'] = random.choice(system_prompts)
-
-                # The DataParser class has an id_generator method which can create random id for you
                 data_dict['qas_id'] = self.id_generator()
+                data_dict['instruction'] = data['instruction']
+                data_dict['input'] = data['input']
+                data_dict['output'] = data['output']
 
-                data_dict['question_text'] = data['instruction'] + " " + data['input']
-
-                data_dict['orig_answer_texts'] = data['output']
-                data_dict['answer_lengths'] = None
                 data_converted.append(data_dict)
 
         # Be sure to assign the final data list to self.converted_data

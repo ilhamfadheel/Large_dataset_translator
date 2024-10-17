@@ -60,7 +60,7 @@ class DataParser(metaclass=ForceBaseCallMeta):
                  average_string_length_in_list: int = 1600,  # Average string length in a list, if exceed, split the list into sub-list and process in parallel
                  translator: Provider = GoogleProvider,
                  source_lang: str = "en",
-                 target_lang: str = "vi",
+                 target_lang: str = "id",
                  fail_translation_code: str="P1OP1_F",  # Fail code for *expected* fail translation and can be removed
                                                         # post-translation,
                  parser_callbacks: List[ParserCallback] = None  # Callback function to be called after each step of the parser
